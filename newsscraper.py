@@ -84,13 +84,13 @@ def _handle_fallback(company, url, limit):
     print(f"{len(paper.articles)} articles found")
 
     num_articles_downloaded = 0
-    none_type_count = 0
+    no_date_count = 0
 
     for content in paper.articles:
         if num_articles_downloaded >= limit:
             break
-        if none_type_count > 10:
-            print("Too many noneType dates, aborting...")
+        if no_date_count > 10:
+            print("Too many non-existent publish dates for this source, aborting...")
             break
 
         try:
@@ -103,9 +103,9 @@ def _handle_fallback(company, url, limit):
 
         # For consistency, if there is no found publish date the article will be skipped.
         # After 10 downloaded articles from the same newspaper without publish date, the company will be skipped.
-        if content.publish_date is None:
-            print(f"Article has date of type None, skipping...")
-            none_type_count += 1
+        if content.publish_date is None or content.publish_date == '':
+            print(f"Can't find article publish date, skipping...")
+            no_date_count += 1
             continue
 
         article = {
