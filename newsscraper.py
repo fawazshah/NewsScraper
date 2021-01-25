@@ -12,8 +12,7 @@ import newspaper
 from newspaper import Article
 
 
-data = {}
-data["newspapers"] = {}
+data = {"newspapers": {}}
 
 
 def parse_config(fname):
@@ -28,7 +27,7 @@ def parse_config(fname):
     return cfg
 
 
-def _handle_rss(company, value, count, limit):
+def _handle_rss(company, value, limit):
     """If a RSS link is provided in the JSON file, this will be the first
     choice.
 
@@ -39,6 +38,7 @@ def _handle_rss(company, value, count, limit):
     attr empty in the JSON file.
     """
 
+    count = 1
     fpd = fp.parse(value["rss"])
     print(f"Downloading articles from {company}")
     news_paper = {"rss": value["rss"], "link": value["link"], "articles": []}
@@ -50,8 +50,7 @@ def _handle_rss(company, value, count, limit):
             continue
         if count > limit:
             break
-        article = {}
-        article["link"] = entry.link
+        article = {"link": entry.link}
         date = entry.published_parsed
         article["published"] = datetime.fromtimestamp(mktime(date)).isoformat()
         try:
@@ -68,11 +67,11 @@ def _handle_rss(company, value, count, limit):
         article["text"] = content.text
         news_paper["articles"].append(article)
         print(f"{count} articles downloaded from {company}, url: {entry.link}")
-        count = count + 1
-    return count, news_paper
+        count += 1
+    return news_paper
 
 
-def _handle_fallback(company, value, limit):
+def _handle_fallback(company, url, limit):
     """This is the fallback method if a RSS-feed link is not provided.
 
     It uses the python newspaper library to extract articles.
@@ -80,14 +79,20 @@ def _handle_fallback(company, value, limit):
     """
 
     print(f"Building site for {company}")
-    paper = newspaper.build(value["link"], memoize_articles=False)
-    news_paper = {"link": value["link"], "articles": []}
-    none_type_count = 0
-    count = 1
+    paper = newspaper.build(url, memoize_articles=False)
+    news_paper = {"link": url, "articles": []}
     print(f"{len(paper.articles)} articles found")
+
+    num_articles_downloaded = 0
+    none_type_count = 0
+
     for content in paper.articles:
-        if count > limit:
+        if num_articles_downloaded >= limit:
             break
+        if none_type_count > 10:
+            print("Too many noneType dates, aborting...")
+            break
+
         try:
             content.download()
             content.parse()
@@ -95,20 +100,14 @@ def _handle_fallback(company, value, limit):
             print(err)
             print("continuing...")
             continue
-        # Again, for consistency, if there is no found publish date the
-        # article will be skipped.
-        #
-        # After 10 downloaded articles from the same newspaper without
-        # publish date, the company will be skipped.
+
+        # For consistency, if there is no found publish date the article will be skipped.
+        # After 10 downloaded articles from the same newspaper without publish date, the company will be skipped.
         if content.publish_date is None:
-            print(f"{count} Article has date of type None...")
-            none_type_count = none_type_count + 1
-            if none_type_count > 10:
-                print("Too many noneType dates, aborting...")
-                none_type_count = 0
-                break
-            count = count + 1
+            print(f"Article has date of type None, skipping...")
+            none_type_count += 1
             continue
+
         article = {
             "title": content.title,
             "text": content.text,
@@ -116,12 +115,12 @@ def _handle_fallback(company, value, limit):
             "published": content.publish_date.isoformat(),
         }
         news_paper["articles"].append(article)
+        num_articles_downloaded += 1
         print(
-            f"{count} articles downloaded from {company} using newspaper, url: {content.url}"
+            f"{num_articles_downloaded} articles downloaded from {company} using newspaper, url: {content.url}"
         )
-        count = count + 1
-        none_type_count = 0
-    return count, news_paper
+
+    return news_paper
 
 
 def run(config, limit=4):
@@ -131,12 +130,13 @@ def run(config, limit=4):
 
     Write result to scraped_articles.json.
     """
-    for index, (company, value) in enumerate(config.items()):
-        print(f"News site {index+1} out of {len(config)}")
+    for i, (company, value) in enumerate(config.items()):
+        print(f"NEWS SITE {i+1} OUT OF {len(config)}")
         if "rss" in value:
             news_paper = _handle_rss(company, value, limit)
         else:
-            news_paper = _handle_fallback(company, value, limit)
+            url = value["link"]
+            news_paper = _handle_fallback(company, url, limit)
         data["newspapers"][company] = news_paper
 
         # Save collected data to file at each iteration in case of error
