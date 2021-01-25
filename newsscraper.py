@@ -72,7 +72,7 @@ def _handle_rss(company, value, count, limit):
     return count, news_paper
 
 
-def _handle_fallback(company, value, count, limit):
+def _handle_fallback(company, value, limit):
     """This is the fallback method if a RSS-feed link is not provided.
 
     It uses the python newspaper library to extract articles.
@@ -83,6 +83,8 @@ def _handle_fallback(company, value, count, limit):
     paper = newspaper.build(value["link"], memoize_articles=False)
     news_paper = {"link": value["link"], "articles": []}
     none_type_count = 0
+    count = 1
+    print(f"{len(paper.articles)} articles found")
     for content in paper.articles:
         if count > limit:
             break
@@ -129,20 +131,20 @@ def run(config, limit=4):
 
     Write result to scraped_articles.json.
     """
-    for company, value in config.items():
-        count = 1
+    for index, (company, value) in enumerate(config.items()):
+        print(f"News site {index+1} out of {len(config)}")
         if "rss" in value:
-            count, news_paper = _handle_rss(company, value, count, limit)
+            news_paper = _handle_rss(company, value, limit)
         else:
-            count, news_paper = _handle_fallback(company, value, count, limit)
+            news_paper = _handle_fallback(company, value, limit)
         data["newspapers"][company] = news_paper
 
-    # Finally it saves the articles as a JSON-file.
-    try:
-        with open("scraped_articles.json", "w") as outfile:
-            json.dump(data, outfile, indent=2)
-    except Exception as err:
-        print(err)
+        # Save collected data to file at each iteration in case of error
+        try:
+            with open("scraped_articles.json", "w") as outfile:
+                json.dump(data, outfile, indent=2)
+        except Exception as err:
+            print(err)
 
 
 def main():
