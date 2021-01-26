@@ -79,7 +79,12 @@ def _handle_fallback(company, url, limit):
     """
 
     print(f"Building site for {company}")
-    paper = newspaper.build(url, memoize_articles=False)
+    try:
+        paper = newspaper.build(url, memoize_articles=False)
+    except:
+        print("Error building newspaper, aborting...")
+        return
+
     news_paper = {"link": url, "articles": []}
     print(f"{len(paper.articles)} articles found")
 
