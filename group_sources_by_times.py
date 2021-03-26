@@ -29,7 +29,7 @@ for i, (company, value) in enumerate(news_sources.items()):
 
         year_freqs[content.publish_date.year] += 1
     
-    print(year_freqs)
+    print(sorted(year_freqs.items()))
 
 # for prop, value in vars(content).items():
 #     print(f"{prop}")
