@@ -17,7 +17,7 @@ for i, (company, value) in enumerate(news_sources.items()):
 
     article_count = 0
     for content in paper.articles:
-        if error_count > 10:
+        if error_count > 5:
             break
 
         try:
