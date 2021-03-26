@@ -13,18 +13,25 @@ for i, (company, value) in enumerate(news_sources.items()):
     print(f"NEWS SITE {i+1} OUT OF {len(news_sources)}")
     print(f"Number of articles: {len(paper.articles)}")
 
+    error_count = 0
+
     article_count = 0
     for content in paper.articles:
+        if error_count > 10:
+            break
+
         try:
             content.download()
             content.parse()
         except Exception as err:
             print(err)
+            error_count += 1
             print("continuing...")
             continue
 
         if content.publish_date is None or content.publish_date == '':
             print(f"Can't find article publish date, skipping...")
+            error_count += 1
             continue
 
         year_freqs[content.publish_date.year] += 1
