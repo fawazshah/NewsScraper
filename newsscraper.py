@@ -163,7 +163,7 @@ def main():
     if len(args) < 2:
         sys.exit("Usage: newsscraper.py NewsPapers.json")
 
-    limit = 4
+    limit = 10
 
     if "--limit" in args:
         idx = args.index("--limit")
