@@ -128,7 +128,7 @@ def _handle_fallback(company, url, limit):
     return news_paper
 
 
-def run(config, limit=4):
+def run(config, limit):
     """Take a config object of sites and urls, and an upper limit.
 
     Iterate through each news company.
@@ -164,6 +164,7 @@ def main():
         sys.exit("Usage: newsscraper.py NewsPapers.json")
 
     limit = 4
+
     if "--limit" in args:
         idx = args.index("--limit")
         limit = int(args[idx + 1])
